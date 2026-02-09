@@ -16,7 +16,7 @@ volatile float checkpoint_pulse2_ns = 211000.0f;// завершение импу
 uint8_t is_button_pressed(void);
 
 /* TIM2 IRQ: обрабатываем CCR1–CCR4 */
-attribute((interrupt("WCH-Interrupt-fast")))
+__attribute__((interrupt("WCH-Interrupt-fast")))
 void TIM2_IRQHandler(void)
 {
 
@@ -135,3 +135,37 @@ void tim2_init_compare_pulses(void)
     // 10) обновление всех регистров вручную
     TIM2->SWEVGR |= TIM_UG;
     TIM2->INTFR   = 0; // обязательно очистить флаги
+
+    // 10) включаем прерывания в NVIC
+    NVIC_EnableIRQ(TIM2_IRQn);
+}
+/* Настройка USART1 TX (PD5) */
+void USARTx_CFG(void)
+{
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD|RCC_APB2Periph_USART1, ENABLE);
+    GPIO_InitTypeDef G = {0};
+    G.GPIO_Pin   = GPIO_Pin_5;
+    G.GPIO_Mode  = GPIO_Mode_AF_PP;
+    G.GPIO_Speed = GPIO_Speed_30MHz;
+    GPIO_Init(GPIOD, &G);
+
+    USART_InitTypeDef U = {0};
+    U.USART_BaudRate            = 115200;
+    U.USART_WordLength          = USART_WordLength_8b;
+    U.USART_StopBits            = USART_StopBits_1;
+    U.USART_Parity              = USART_Parity_No;
+    U.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    U.USART_Mode                = USART_Mode_Tx;
+    USART_Init(USART1, &U);
+    USART_Cmd(USART1, ENABLE);
+}
+
+/* Настройка PC1 как кнопки */
+void GPIO_INIT(void)
+{
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+    GPIO_InitTypeDef G = {0};
+    G.GPIO_Pin  = GPIO_Pin_1;
+    G.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_Init(GPIOC, &G);
+}
